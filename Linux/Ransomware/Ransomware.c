@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<time.h>
 
 //Prototipos de funciones
 void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *direccion_archivo, char *nombre_archivo, FILE *archivo, ssize_t tamanio, int *dos_despues, int a,int b,int c);
@@ -19,10 +20,10 @@ int main(int argc, char *argv[]){
 
 	//Variables para leer salida de comandos y archivos
 
-	char *linea_direccion=NULL, **direccion_carpeta=NULL, *direccion_archivo=NULL, *nombre_archivo=NULL, *ls=NULL, *ls_awk=NULL, boleano[2];
+	char *linea_direccion=NULL, **direccion_carpeta=NULL, *direccion_archivo=NULL, *nombre_archivo=NULL, *ls=NULL, *ls_awk=NULL, boleano[3];
 	//Comando para obtener directorios
 	
-	char comando1[]="ls -lRa "; 
+	char comando1[]="ls -lRa 2>/dev/null "; 
 
 	//Comando para obtener nombre de los archivod
 
@@ -36,7 +37,12 @@ int main(int argc, char *argv[]){
 		arg1=atoi(argv[2]);
 		arg2=atoi(argv[3]);
 		arg3=atoi(argv[4]);	
-	}
+	}else{
+                srand(time(NULL));
+                arg1=rand()%256;
+                arg2=rand()%256;
+                arg3=rand()%256;
+        }
 
 	//Reserva de memoria
 
@@ -48,10 +54,11 @@ int main(int argc, char *argv[]){
 	ls=(char *)calloc(strlen(comando1)+strlen(argv[1]),sizeof(char));								
 	strcpy(ls,comando1);
 	strcat(ls,argv[1]);
-
+	printf("%s\n",ls);
 	ls_awk=(char *)calloc(strlen(ls)+strlen(awk),sizeof(char));	
 	strcpy(ls_awk,ls);
 	strcat(ls_awk,awk);
+	printf("%s\n",ls_awk);
 	//Ejecutamos los comandos	
 
 	FILE *directorios=popen(ls,"r"), *directorios2=popen(ls_awk,"r"), *archivo;
@@ -115,7 +122,7 @@ int main(int argc, char *argv[]){
 		//En caso de que se vaya a cifrar se guarda la contraseña en el archivo .bandera
 		if(bandera=fopen(".bandera","w")){
 			fprintf(bandera,"%s","si");
-			fprintf(bandera,"\n%i %i %i",atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+			fprintf(bandera,"\n%i %i %i",arg1,arg2,arg3);
 			fclose(bandera);
 		}else{
 			printf("Fallo en ejecución 4");
@@ -259,9 +266,3 @@ void cifrar(char *direccion_archivo, int a, int b, int c){
 		}
 	}	
 }
-
-
-
-
-
-
